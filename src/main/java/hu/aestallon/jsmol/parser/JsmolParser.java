@@ -65,9 +65,9 @@ public final class JsmolParser {
     final Matcher m = ptn.matcher(str);
     return (m.find(idx) && m.start() == idx)
         ? new Ok<>(new ParseCursor(
-        str,
-        idx + m.group().length(),
-        resultProcessor.apply(m.group())))
+            str,
+            idx + m.group().length(),
+            resultProcessor.apply(m.group())))
         : new Err<>(new ParseCursor(str, idx, null));
   }
 

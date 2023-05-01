@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public interface JsonValue {
 
   abstract class WrappedValue<T> implements JsonValue {
-    T value;
+    private final T value;
 
     protected WrappedValue(T value) {
       this.value = value;
@@ -34,7 +34,7 @@ public interface JsonValue {
 
     @Override
     public String toString() {
-      return "number(%s)".formatted(value.toString());
+      return "number(%s)".formatted(value().toString());
     }
   }
 
@@ -43,7 +43,7 @@ public interface JsonValue {
 
     @Override
     public String toString() {
-      return "boolean(%s)".formatted(value.toString());
+      return "boolean(%s)".formatted(value().toString());
     }
   }
 
@@ -52,7 +52,7 @@ public interface JsonValue {
 
     @Override
     public String toString() {
-      return "string(\"%s\")".formatted(value);
+      return "string(\"%s\")".formatted(value());
     }
 
   }
