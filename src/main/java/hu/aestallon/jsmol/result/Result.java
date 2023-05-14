@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 
 public interface Result<T> {
 
-
   @FunctionalInterface
   interface CheckedSupplier<T> {
     T get() throws Exception;
@@ -39,7 +38,7 @@ public interface Result<T> {
 
   boolean isOk();
 
-  void ifPresent(Consumer<T> c);
+  void ifOk(Consumer<T> c);
 
   void errMatch(Consumer<Object> c);
 

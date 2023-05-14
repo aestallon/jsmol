@@ -40,7 +40,7 @@ public class Err<T, X> implements Result<T> {
   }
 
   @Override
-  public void ifPresent(Consumer<T> c) {
+  public void ifOk(Consumer<T> c) {
     // NO OP
   }
 

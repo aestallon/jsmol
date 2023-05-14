@@ -43,7 +43,7 @@ public class Ok<T> implements Result<T> {
   }
 
   @Override
-  public void ifPresent(Consumer<T> c) {
+  public void ifOk(Consumer<T> c) {
     c.accept(t);
   }
 

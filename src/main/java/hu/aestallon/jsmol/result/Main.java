@@ -1,7 +1,7 @@
 package hu.aestallon.jsmol.result;
 
+import hu.aestallon.jsmol.json.JsonValue;
 import hu.aestallon.jsmol.parser.JsmolParser;
-import hu.aestallon.jsmol.parser.JsonValue;
 
 public class Main {
   public static void main(String[] args) {
