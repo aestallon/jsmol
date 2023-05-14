@@ -14,9 +14,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public sealed class ObjectMarshaller<T>
-    implements JsonMarshaller<T>
-    permits ExtendedObjectMarshaller {
+public class ObjectMarshaller<T>
+    implements JsonMarshaller<T> {
 
   private final Map<String, Function<T, Result<JsonValue>>> getters = new HashMap<>();
   private final Map<String, BiConsumer<T, JsonValue>>       setters = new HashMap<>();
