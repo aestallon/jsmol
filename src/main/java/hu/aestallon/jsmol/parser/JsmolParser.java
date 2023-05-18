@@ -180,7 +180,7 @@ public final class JsmolParser {
   private static final Function<String, JsonValue> DISCARD = s -> null;
 
 
-  public Result<JsonValue> external(String s) {
+  public Result<JsonValue> parse(String s) {
     return parseInternal(s).map(ParseCursor::res);
   }
 

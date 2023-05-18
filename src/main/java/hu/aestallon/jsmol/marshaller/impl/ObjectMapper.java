@@ -1,8 +1,12 @@
-package hu.aestallon.jsmol.marshaller;
+package hu.aestallon.jsmol.marshaller.impl;
 
 import hu.aestallon.jsmol.json.JsonNull;
 import hu.aestallon.jsmol.json.JsonObject;
 import hu.aestallon.jsmol.json.JsonValue;
+import hu.aestallon.jsmol.marshaller.JsonMarshaller;
+import hu.aestallon.jsmol.marshaller.JsonTypeMapper;
+import hu.aestallon.jsmol.marshaller.JsonUnmarshaller;
+import hu.aestallon.jsmol.marshaller.TypeConversionException;
 import hu.aestallon.jsmol.result.ExErr;
 import hu.aestallon.jsmol.result.Ok;
 import hu.aestallon.jsmol.result.Result;
@@ -14,34 +18,43 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class ObjectMarshaller<T>
-    implements JsonMarshaller<T> {
+public class ObjectMapper<T> implements JsonTypeMapper<T> {
 
   private final Map<String, Function<T, Result<JsonValue>>> getters = new HashMap<>();
   private final Map<String, BiConsumer<T, JsonValue>>       setters = new HashMap<>();
   private final Supplier<T>                                 typeConstructor;
 
-  public ObjectMarshaller(Supplier<T> typeConstructor) {this.typeConstructor = typeConstructor;}
+  ObjectMapper(Supplier<T> typeConstructor) {this.typeConstructor = typeConstructor;}
 
-  public ObjectMarshaller<T> bindString(String name, Function<T, String> getter,
-                                        BiConsumer<T, String> setter) {
-    return this.bind(name, JsonMarshallers.STRING_MARSHALLER, getter, setter);
+  <P> ObjectMapper<T> bind(String name, JsonTypeMapper<P> typeMapper,
+                           Function<T, ? extends P> getter,
+                           BiConsumer<T, ? super P> setter) {
+    return this.bind(name, typeMapper, getter, typeMapper, setter);
   }
 
-  public <P> ObjectMarshaller<T> bind(String name, JsonMarshaller<P> marshaller,
-                                      Function<T, ? extends P> getter,
-                                      BiConsumer<T, ? super P> setter) {
+  <P> ObjectMapper<T> bind(String name, JsonMarshaller<P> marshaller,
+                           Function<T, ? extends P> getter,
+                           JsonUnmarshaller<P> unmarshaller,
+                           BiConsumer<T, ? super P> setter) {
     this.getters.put(name, t -> marshaller.marshall(getter.apply(t)));
-    this.setters.put(name, (t, json) -> marshaller
+    this.setters.put(name, (t, json) -> unmarshaller
         .unmarshall(json)
         .ifOk(s -> setter.accept(t, s)));
     return this;
   }
+  @SuppressWarnings("unchecked, rawtypes")
+  ObjectMapper<T> bindRaw(String name, JsonTypeMapper typeMapper,
+                          Function getter,
+                          BiConsumer setter) {
+    return this.bind(name, typeMapper, getter, setter);
+  }
 
-  ObjectMarshaller<T> bindRaw(String name, JsonMarshaller marshaller,
-                              Function getter,
-                              BiConsumer setter) {
-    return this.bind(name, marshaller, getter, setter);
+  @SuppressWarnings("unchecked, rawtypes")
+  ObjectMapper<T> bindRaw(String name, JsonMarshaller marshaller,
+                          Function getter,
+                          JsonUnmarshaller unmarshaller,
+                          BiConsumer setter) {
+    return this.bind(name, marshaller, getter, unmarshaller, setter);
   }
 
   @Override
