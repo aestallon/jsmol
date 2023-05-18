@@ -5,7 +5,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class Ok<T> implements Result<T> {
+public final class Ok<T> implements Result<T> {
+
+  public static <T> Ok<T> of(T t) {
+    return new Ok<>(t);
+  }
 
   private final T t;
 
@@ -50,6 +54,11 @@ public class Ok<T> implements Result<T> {
   @Override
   public boolean isOk() {
     return true;
+  }
+
+  @Override
+  public boolean isErr() {
+    return false;
   }
 
   @Override

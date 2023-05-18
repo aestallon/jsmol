@@ -7,7 +7,11 @@ import java.util.function.Supplier;
 
 public class Err<T, X> implements Result<T> {
 
-  private final X x;
+  public static <T, X> Err<T, X> of(X x) {
+    return new Err<>(x);
+  }
+
+  protected final X x;
 
   public Err(X x) {
     this.x = x;
@@ -36,7 +40,7 @@ public class Err<T, X> implements Result<T> {
 
   @Override
   public T unwrap() {
-    throw new IllegalStateException();
+    throw new IllegalStateException(x.toString());
   }
 
   @Override
@@ -45,8 +49,13 @@ public class Err<T, X> implements Result<T> {
   }
 
   @Override
-  public boolean isOk() {
+  public final boolean isOk() {
     return false;
+  }
+
+  @Override
+  public final boolean isErr() {
+    return true;
   }
 
   @Override
