@@ -5,4 +5,4 @@ package hu.aestallon.jsmol.json;
  *
  * @author Szabolcs Bazil Papp
  */
-public interface JsonValue {}
+public sealed interface JsonValue permits WrappedValue, JsonNull {}

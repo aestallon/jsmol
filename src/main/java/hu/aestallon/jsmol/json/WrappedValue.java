@@ -2,7 +2,10 @@ package hu.aestallon.jsmol.json;
 
 import java.util.Objects;
 
-public abstract class WrappedValue<T> implements JsonValue {
+public sealed class WrappedValue<T>
+    implements JsonValue
+    permits JsonArray, JsonBoolean, JsonNumber, JsonObject, JsonString {
+
   private final T value;
 
   protected WrappedValue(T value) {

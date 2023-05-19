@@ -1,6 +1,6 @@
 package hu.aestallon.jsmol.json;
 
-public class JsonString extends WrappedValue<String> {
+public final class JsonString extends WrappedValue<String> {
   public JsonString(String s) {super(s);}
 
   @Override
