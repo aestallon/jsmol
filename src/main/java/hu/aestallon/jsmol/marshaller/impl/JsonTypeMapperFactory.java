@@ -1,5 +1,7 @@
 package hu.aestallon.jsmol.marshaller.impl;
 
+import hu.aestallon.jsmol.json.JsonNull;
+import hu.aestallon.jsmol.json.JsonObject;
 import hu.aestallon.jsmol.json.JsonValue;
 import hu.aestallon.jsmol.marshaller.*;
 import hu.aestallon.jsmol.result.Err;
@@ -11,6 +13,7 @@ import java.lang.reflect.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.RecordMapperFactory {
 
@@ -98,14 +101,14 @@ abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.Rec
             // important thing is that it returns Ok. Even the #unwrap() in the functional
             // accessor would not cause a wild exception to be thrown as Result#map consumes any
             // exceptions and re-wraps them in an ExErr.
-            @SuppressWarnings("rawtypes")
-            final Result bindAction = provider.provideList(parameterClass)
-                .map(arrayMapper -> marshaller.bindRaw(
-                    componentName,
-                    arrayMapper,
-                    // TODO: Improve ObjectMapper#bindRaw to tolerate checked suppliers
-                    t -> Result.of(() -> componentAccessor.invoke(t)).unwrap(),
-                    (t, __) -> {}));
+            @SuppressWarnings("rawtypes") final Result bindAction =
+                provider.provideList(parameterClass)
+                    .map(arrayMapper -> marshaller.bindRaw(
+                        componentName,
+                        arrayMapper,
+                        // TODO: Improve ObjectMapper#bindRaw to tolerate checked suppliers
+                        t -> Result.of(() -> componentAccessor.invoke(t)).unwrap(),
+                        (t, __) -> {}));
             // FIXME: we are technically allowed to do this, improve Result API to tolerate this
             //  usage:
             if (bindAction.isErr()) {return (Result<JsonMarshaller<R>>) bindAction;}
@@ -126,7 +129,33 @@ abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.Rec
     }
 
     private Result<JsonUnmarshaller<R>> createUnmarshaller() {
-      return Ok.of(null);
+      return Result
+          .of(() -> super.type.getDeclaredConstructor(this.componentsByName
+              .values().stream()
+              .map(RecordComponent::getType)
+              .toArray(Class<?>[]::new)))
+          .map(constructor ->
+              json -> {
+                if (json instanceof JsonNull) {
+                  return Ok.of(null);
+                }
+                if (json instanceof JsonObject jsonObject) {
+                  return this.componentsByName.entrySet().stream()
+                      .map(e -> {
+                        final String prop = e.getKey();
+                        final Class<?> javaType = e.getValue().getType();
+                        return Optional.ofNullable(jsonObject.value().get(prop))
+                            .map(jsonVal -> provider
+                                .provide(javaType)
+                                .flatMap(mapper -> mapper.unmarshall(jsonVal)))
+                            .orElse(Ok.of(null));
+                      })
+                      .collect(Result.toList())
+                      .map(args -> args.toArray(Object[]::new))
+                      .flatMap(args -> Result.of(() -> constructor.newInstance(args)));
+                }
+                return ExErr.of(new TypeConversionException(json.getClass(), super.type));
+              });
     }
   }
 

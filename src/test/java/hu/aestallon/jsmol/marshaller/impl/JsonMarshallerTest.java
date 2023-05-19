@@ -14,7 +14,7 @@ import java.util.Objects;
 class JsonMarshallerTest {
 
   private final JsonTypeMapperProvider jsonTypeMapperProvider = new JsonTypeMapperProviderImpl();
-  private final JsonTypeMapper<String> stringMarshaller       = JsonPrimitiveMapper.STRING_MAPPER;
+  private final JsonTypeMapper<String> stringMapper           = JsonPrimitiveMapper.STRING_MAPPER;
 
   private static final class Course {
     private static final String SUBJECT  = "subject";
@@ -109,21 +109,13 @@ class JsonMarshallerTest {
 
   @Test
   void marshallingToJsonWithCustomMarshallerWorks() throws Exception {
-    final var personMarshaller = new ObjectMapper<>(Person::new)
-        .bind(
-            Person.FIRST_NAME, stringMarshaller, Person::getFirstName, stringMarshaller,
-            Person::setFirstName)
-        .bind(
-            Person.LAST_NAME, stringMarshaller, Person::getLastName, stringMarshaller,
-            Person::setLastName);
-    final var courseMarshaller = new ObjectMapper<>(Course::new)
-        .bind(
-            Course.SUBJECT, stringMarshaller, Course::getSubject, stringMarshaller,
-            Course::setSubject)
-        .bind(Course.TEACHER, personMarshaller, Course::getTeacher, personMarshaller,
-            Course::setTeacher)
-        .bind(Course.STUDENTS, new ArrayMapper<>(personMarshaller), Course::getStudents,
-            new ArrayMapper<>(personMarshaller),
+    final var personMapper = new ObjectMapper<>(Person::new)
+        .bind(Person.FIRST_NAME, stringMapper, Person::getFirstName,Person::setFirstName)
+        .bind(Person.LAST_NAME, stringMapper, Person::getLastName, Person::setLastName);
+    final var courseMapper = new ObjectMapper<>(Course::new)
+        .bind(Course.SUBJECT, stringMapper, Course::getSubject, Course::setSubject)
+        .bind(Course.TEACHER, personMapper, Course::getTeacher, Course::setTeacher)
+        .bind(Course.STUDENTS, new ArrayMapper<>(personMapper), Course::getStudents,
             Course::setStudents);
 
     final Course course = new Course()
@@ -149,24 +141,33 @@ class JsonMarshallerTest {
                 .setLastName("Ennor")
         ));
 
-    Course courseResult = courseMarshaller
-        .marshall(course)                                // turn to internal JSON representation
-        .map(JsonValue::toString)                        // fully marshall it to a string
+    Course courseResult = courseMapper
+        .marshall(course)                             // turn to internal JSON representation
+        .map(JsonValue::toString)                     // fully marshall it to a string
         .flatMap(str -> new JsmolParser().parse(str)) // parse it back from a string
-        .flatMap(courseMarshaller::unmarshall)           // unmarshall it to an object
-        .unwrap();                                       // force unwrap
+        .flatMap(courseMapper::unmarshall)            // unmarshall it to an object
+        .unwrap();                                    // force unwrap
     Assertions.assertEquals(course, courseResult);
   }
 
   @Test
   void recordMarshallingWorksWithoutAnnotations() throws Exception {
+    final JsmolParser parser = new JsmolParser();
+
     record Cat(String name, String owner) {}
     Cat cat = new Cat("Kabala", "aestallon");
-    jsonTypeMapperProvider
+    Cat reparsedCat = jsonTypeMapperProvider
         .provide(Cat.class)
         .flatMap(mapper -> mapper.marshall(cat))
         .map(JsonValue::toString)
+        .flatMap(parser::parse)
+        .flatMap(json -> jsonTypeMapperProvider
+            .provide(Cat.class)
+            .flatMap(mapper -> mapper.unmarshall(json)))
         .unwrap();
+    System.out.println("original cat : " + cat);
+    System.out.println("reparsed cat : " + reparsedCat);
+    Assertions.assertEquals(cat, reparsedCat);
 
     record Owner(String name, String hometown) {}
     record Dog(String name, Owner owner) {}
