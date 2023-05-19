@@ -26,22 +26,24 @@ public class ObjectMapper<T> implements JsonTypeMapper<T> {
 
   ObjectMapper(Supplier<T> typeConstructor) {this.typeConstructor = typeConstructor;}
 
-  <P> ObjectMapper<T> bind(String name, JsonTypeMapper<P> typeMapper,
+  <P> ObjectMapper<T> bind(String name,
+                           JsonTypeMapper<P> typeMapper,
                            Function<T, ? extends P> getter,
-                           BiConsumer<T, ? super P> setter) {
+                           BiConsumer<T, P> setter) {
     return this.bind(name, typeMapper, getter, typeMapper, setter);
   }
 
   <P> ObjectMapper<T> bind(String name, JsonMarshaller<P> marshaller,
                            Function<T, ? extends P> getter,
                            JsonUnmarshaller<P> unmarshaller,
-                           BiConsumer<T, ? super P> setter) {
+                           BiConsumer<T, P> setter) {
     this.getters.put(name, t -> marshaller.marshall(getter.apply(t)));
     this.setters.put(name, (t, json) -> unmarshaller
         .unmarshall(json)
-        .ifOk(s -> setter.accept(t, s)));
+        .ifOk(p -> setter.accept(t, p)));
     return this;
   }
+
   @SuppressWarnings("unchecked, rawtypes")
   ObjectMapper<T> bindRaw(String name, JsonTypeMapper typeMapper,
                           Function getter,
@@ -60,7 +62,7 @@ public class ObjectMapper<T> implements JsonTypeMapper<T> {
   @Override
   public Result<JsonValue> marshall(T t) {
     if (t == null) {
-      return new Ok<>(new JsonNull());
+      return new Ok<>(JsonNull.INSTANCE);
     }
     Map<String, Result<JsonValue>> marshalledProperties = getters.entrySet().stream()
         .map(e -> {

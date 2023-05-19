@@ -101,14 +101,14 @@ abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.Rec
             // important thing is that it returns Ok. Even the #unwrap() in the functional
             // accessor would not cause a wild exception to be thrown as Result#map consumes any
             // exceptions and re-wraps them in an ExErr.
-            @SuppressWarnings("rawtypes") final Result bindAction =
-                provider.provideList(parameterClass)
-                    .map(arrayMapper -> marshaller.bindRaw(
-                        componentName,
-                        arrayMapper,
-                        // TODO: Improve ObjectMapper#bindRaw to tolerate checked suppliers
-                        t -> Result.of(() -> componentAccessor.invoke(t)).unwrap(),
-                        (t, __) -> {}));
+            @SuppressWarnings("rawtypes") final Result bindAction = provider
+                .provideList(parameterClass)
+                .map(arrayMapper -> marshaller.bindRaw(
+                    componentName,
+                    arrayMapper,
+                    // TODO: Improve ObjectMapper#bindRaw to tolerate checked suppliers
+                    t -> Result.of(() -> componentAccessor.invoke(t)).unwrap(),
+                    (t, __) -> {}));
             // FIXME: we are technically allowed to do this, improve Result API to tolerate this
             //  usage:
             if (bindAction.isErr()) {return (Result<JsonMarshaller<R>>) bindAction;}
@@ -116,7 +116,8 @@ abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.Rec
         } else {
           // we do not support parameterized types at the moment.
           // Reasoning for the raw Result same as above:
-          final Result bindAction = provider.provide(componentType)
+          @SuppressWarnings("rawtypes") final Result bindAction = provider
+              .provide(componentType)
               .map(componentMapper -> marshaller.bindRaw(
                   componentName,
                   componentMapper,
@@ -134,28 +135,31 @@ abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.Rec
               .values().stream()
               .map(RecordComponent::getType)
               .toArray(Class<?>[]::new)))
-          .map(constructor ->
-              json -> {
-                if (json instanceof JsonNull) {
-                  return Ok.of(null);
-                }
-                if (json instanceof JsonObject jsonObject) {
-                  return this.componentsByName.entrySet().stream()
-                      .map(e -> {
-                        final String prop = e.getKey();
-                        final Class<?> javaType = e.getValue().getType();
-                        return Optional.ofNullable(jsonObject.value().get(prop))
-                            .map(jsonVal -> provider
-                                .provide(javaType)
-                                .flatMap(mapper -> mapper.unmarshall(jsonVal)))
-                            .orElse(Ok.of(null));
-                      })
-                      .collect(Result.toList())
-                      .map(args -> args.toArray(Object[]::new))
-                      .map(constructor::newInstance);
-                }
-                return ExErr.of(new TypeConversionException(json.getClass(), super.type));
-              });
+          .map(this::createUnmarshaller);
+    }
+
+    private JsonUnmarshaller<R> createUnmarshaller(Constructor<R> constructor) {
+      return json -> {
+        if (json instanceof JsonNull) {
+          return Ok.of(null);
+        }
+        if (json instanceof JsonObject jsonObject) {
+          return this.componentsByName.entrySet().stream()
+              .map(e -> {
+                final String prop = e.getKey();
+                final Class<?> javaType = e.getValue().getType();
+                return Optional.ofNullable(jsonObject.value().get(prop))
+                    .map(jsonVal -> provider
+                        .provide(javaType)
+                        .flatMap(mapper -> mapper.unmarshall(jsonVal)))
+                    .orElse(Ok.of(null));
+              })
+              .collect(Result.toList())
+              .map(args -> args.toArray(Object[]::new))
+              .map(constructor::newInstance);
+        }
+        return ExErr.of(new TypeConversionException(json.getClass(), super.type));
+      };
     }
   }
 

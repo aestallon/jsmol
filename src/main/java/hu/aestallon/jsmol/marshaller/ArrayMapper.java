@@ -14,20 +14,6 @@ public class ArrayMapper<E> implements JsonTypeMapper<List<E>> {
 
   private final JsonTypeMapper<E> typeMapper;
 
-  public ArrayMapper(JsonMarshaller<E> marshaller, JsonUnmarshaller<E> unmarshaller) {
-    this.typeMapper = new JsonTypeMapper<>() {
-      @Override
-      public Result<JsonValue> marshall(E e) {
-        return marshaller.marshall(e);
-      }
-
-      @Override
-      public Result<E> unmarshall(JsonValue json) {
-        return unmarshaller.unmarshall(json);
-      }
-    };
-  }
-
   public ArrayMapper(JsonTypeMapper<E> typeMapper) {
     this.typeMapper = typeMapper;
   }
@@ -35,7 +21,7 @@ public class ArrayMapper<E> implements JsonTypeMapper<List<E>> {
   @Override
   public Result<JsonValue> marshall(List<E> es) {
     if (es == null) {
-      return new Ok<>(new JsonNull());
+      return new Ok<>(JsonNull.INSTANCE);
     }
     if (es.isEmpty()) {
       return new Ok<>(new JsonArray(Collections.emptyList()));
