@@ -4,7 +4,7 @@ import hu.aestallon.jsmol.json.JsonValue;
 import hu.aestallon.jsmol.marshaller.ArrayMapper;
 import hu.aestallon.jsmol.marshaller.JsonTypeMapper;
 import hu.aestallon.jsmol.marshaller.JsonTypeMapperProvider;
-import hu.aestallon.jsmol.parser.JsmolParser;
+import hu.aestallon.jsmol.parser.JsonParser;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -144,7 +144,7 @@ class JsonMarshallerTest {
     Course courseResult = courseMapper
         .marshall(course)                             // turn to internal JSON representation
         .map(JsonValue::toString)                     // fully marshall it to a string
-        .flatMap(str -> new JsmolParser().parse(str)) // parse it back from a string
+        .flatMap(str -> new JsonParser().parse(str)) // parse it back from a string
         .flatMap(courseMapper::unmarshall)            // unmarshall it to an object
         .unwrap();                                    // force unwrap
     Assertions.assertEquals(course, courseResult);
@@ -152,7 +152,7 @@ class JsonMarshallerTest {
 
   @Test
   void recordMarshallingWorksWithoutAnnotations() throws Exception {
-    final JsmolParser parser = new JsmolParser();
+    final JsonParser parser = new JsonParser();
 
     record Cat(String name, String owner) {}
     Cat cat = new Cat("Kabala", "aestallon");
