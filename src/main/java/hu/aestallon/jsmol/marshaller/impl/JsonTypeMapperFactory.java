@@ -152,7 +152,7 @@ abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.Rec
                       })
                       .collect(Result.toList())
                       .map(args -> args.toArray(Object[]::new))
-                      .flatMap(args -> Result.of(() -> constructor.newInstance(args)));
+                      .map(constructor::newInstance);
                 }
                 return ExErr.of(new TypeConversionException(json.getClass(), super.type));
               });
