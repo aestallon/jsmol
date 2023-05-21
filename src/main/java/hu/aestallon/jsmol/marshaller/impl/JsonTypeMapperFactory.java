@@ -21,7 +21,8 @@ abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.Rec
       return new RecordMapperFactory<>(type, provider).create();
     }
 
-    return ExErr.of(null);
+    return ExErr.of(new IllegalStateException("non-record type " + type.getSimpleName() + " is not"
+                                              + " supported!"));
   }
 
   protected final Class<T>               type;

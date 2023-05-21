@@ -13,11 +13,9 @@ import org.junit.jupiter.api.Test;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -227,6 +225,34 @@ class JsonMarshallerTest {
       Object objectMap = result.unwrap();
       assertThat(objectMap).isInstanceOf(Map.class);
 
+      @SuppressWarnings("unchecked")
+      Map<String, Object> map = (Map<String, Object>) objectMap;
+      assertThat(map).containsOnlyKeys("companyName", "address", "departments", "facilities");
+      @SuppressWarnings("unchecked")
+      Map<String, Object> facilities = (Map<String, Object>) map.get("facilities");
+      assertThat(facilities)
+          .returns(true, m -> m.get("cafeteria"))
+          .returns(true, m -> m.get("gym"));
+
+      System.out.println(objectMap);
+
+      record Employee(String name, String position) {}
+      record Department(String name, List<Employee> employees) {}
+      record Address(String street, String city, String state, String postalCode) {}
+      record ConferenceRoom(String name, long capacity) {}
+      record Facilities(boolean cafeteria, boolean gym, List<ConferenceRoom> conferenceRooms) {}
+      record Company(String companyName, Address address, List<Department> departments,
+                     Facilities facilities) {}
+      Company company = parser.parse(jsonString)
+          .flatMap(json -> jsonTypeMapperProvider.provide(Company.class)
+              .flatMap(companyMapper -> companyMapper.unmarshall(json)))
+          .unwrap();
+      Object objectMapAcquiredThroughRecord = jsonTypeMapperProvider.provide(Company.class)
+          .flatMap(companyMapper -> companyMapper.marshall(company))
+          .flatMap(valueMapper::unmarshall)
+          .unwrap();
+      assertThat(objectMapAcquiredThroughRecord).isEqualTo(objectMap);
+
       Object reparsedObjectMap = valueMapper
           .marshall(objectMap)
           .map(JsonValue::toString)
@@ -234,7 +260,6 @@ class JsonMarshallerTest {
           .flatMap(valueMapper::unmarshall)
           .unwrap();
       assertThat(reparsedObjectMap).isEqualTo(objectMap);
-
     }
   }
 

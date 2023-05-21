@@ -23,6 +23,13 @@ public class JsonTypeMapperProviderImpl implements JsonTypeMapperProvider {
         Double.class, JsonPrimitiveMapper.DOUBLE_MAPPER,
         Boolean.class, JsonPrimitiveMapper.BOOLEAN_MAPPER
     ));
+    typeMappersByClass.putAll(Map.of(
+        int.class, JsonPrimitiveMapper.INT_MAPPER,
+        long.class, JsonPrimitiveMapper.LONG_MAPPER,
+        float.class, JsonPrimitiveMapper.FLOAT_MAPPER,
+        double.class, JsonPrimitiveMapper.DOUBLE_MAPPER,
+        boolean.class, JsonPrimitiveMapper.BOOLEAN_MAPPER
+    ));
   }
 
   @Override
