@@ -10,13 +10,13 @@ import hu.aestallon.jsmol.marshaller.TypeConversionException;
 import hu.aestallon.jsmol.result.ExErr;
 import hu.aestallon.jsmol.result.Ok;
 import hu.aestallon.jsmol.result.Result;
+import hu.aestallon.jsmol.util.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class ObjectMapper<T> implements JsonTypeMapper<T> {
 
@@ -64,26 +64,11 @@ public class ObjectMapper<T> implements JsonTypeMapper<T> {
     if (t == null) {
       return new Ok<>(JsonNull.INSTANCE);
     }
-    Map<String, Result<JsonValue>> marshalledProperties = getters.entrySet().stream()
-        .map(e -> {
-          final String name = e.getKey();
-          final Function<T, Result<JsonValue>> accessor = e.getValue();
-          Result<JsonValue> marshalledResult = accessor.apply(t);
-
-          return Map.entry(name, marshalledResult);
-        })
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    if (marshalledProperties.values().stream().allMatch(Result::isOk)) {
-      JsonObject jsonObject = new JsonObject(marshalledProperties
-          .entrySet().stream()
-          .map(e -> Map.entry(e.getKey(), e.getValue().unwrap()))
-          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-      return new Ok<>(jsonObject);
-    }
-    return marshalledProperties.values().stream()
-        .filter(r -> !r.isOk())
-        .findFirst()
-        .orElseThrow();
+    return getters.entrySet().stream()
+        .map(Pair::ofEntries)
+        .map(Pair.onB(getter -> getter.apply(t)))
+        .collect(Result.ofMap())
+        .map(JsonObject::new);
   }
 
   @Override
