@@ -1,0 +1,51 @@
+{
+  "companyName": "Acme Corporation",
+  "address": {
+    "street": "123 Main St",
+    "city": "Exampleville",
+    "state": "Example State",
+    "postalCode": "12345"
+  },
+  "departments": [
+    {
+      "name": "Human Resources",
+      "employees": [
+        {
+          "name": "John Smith",
+          "position": "HR Manager"
+        },
+        {
+          "name": "Jane Doe",
+          "position": "HR Specialist"
+        }
+      ]
+    },
+    {
+      "name": "Finance",
+      "employees": [
+        {
+          "name": "Mike Johnson",
+          "position": "Finance Director"
+        },
+        {
+          "name": "Sarah Thompson",
+          "position": "Accountant"
+        }
+      ]
+    }
+  ],
+  "facilities": {
+    "cafeteria": true,
+    "gym": true,
+    "conferenceRooms": [
+      {
+        "name": "Meeting Room A",
+        "capacity": 20
+      },
+      {
+        "name": "Conference Room B",
+        "capacity": 50
+      }
+    ]
+  }
+}

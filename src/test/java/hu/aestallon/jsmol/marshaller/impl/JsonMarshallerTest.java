@@ -4,17 +4,29 @@ import hu.aestallon.jsmol.json.JsonValue;
 import hu.aestallon.jsmol.marshaller.ArrayMapper;
 import hu.aestallon.jsmol.marshaller.JsonTypeMapper;
 import hu.aestallon.jsmol.marshaller.JsonTypeMapperProvider;
+import hu.aestallon.jsmol.marshaller.JsonValueMapper;
 import hu.aestallon.jsmol.parser.JsonParser;
+import hu.aestallon.jsmol.result.Result;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class JsonMarshallerTest {
 
   private final JsonTypeMapperProvider jsonTypeMapperProvider = new JsonTypeMapperProviderImpl();
   private final JsonTypeMapper<String> stringMapper           = JsonPrimitiveMapper.STRING_MAPPER;
+  private final JsonParser             parser                 = new JsonParser();
 
   private static final class Course {
     private static final String SUBJECT  = "subject";
@@ -110,7 +122,7 @@ class JsonMarshallerTest {
   @Test
   void marshallingToJsonWithCustomMarshallerWorks() throws Exception {
     final var personMapper = new ObjectMapper<>(Person::new)
-        .bind(Person.FIRST_NAME, stringMapper, Person::getFirstName,Person::setFirstName)
+        .bind(Person.FIRST_NAME, stringMapper, Person::getFirstName, Person::setFirstName)
         .bind(Person.LAST_NAME, stringMapper, Person::getLastName, Person::setLastName);
     final var courseMapper = new ObjectMapper<>(Course::new)
         .bind(Course.SUBJECT, stringMapper, Course::getSubject, Course::setSubject)
@@ -144,7 +156,7 @@ class JsonMarshallerTest {
     Course courseResult = courseMapper
         .marshall(course)                             // turn to internal JSON representation
         .map(JsonValue::toString)                     // fully marshall it to a string
-        .flatMap(str -> new JsonParser().parse(str)) // parse it back from a string
+        .flatMap(parser::parse) // parse it back from a string
         .flatMap(courseMapper::unmarshall)            // unmarshall it to an object
         .unwrap();                                    // force unwrap
     Assertions.assertEquals(course, courseResult);
@@ -152,8 +164,6 @@ class JsonMarshallerTest {
 
   @Test
   void recordMarshallingWorksWithoutAnnotations() throws Exception {
-    final JsonParser parser = new JsonParser();
-
     record Cat(String name, String owner) {}
     Cat cat = new Cat("Kabala", "aestallon");
     Cat reparsedCat = jsonTypeMapperProvider
@@ -173,11 +183,16 @@ class JsonMarshallerTest {
     record Dog(String name, Owner owner) {}
     Dog dog = new Dog("Rex", new Owner("John", "Budapest"));
 
-    jsonTypeMapperProvider
+    Dog reparsedDog = jsonTypeMapperProvider
         .provide(Dog.class)
         .flatMap(mapper -> mapper.marshall(dog))
         .map(JsonValue::toString)
+        .flatMap(parser::parse)
+        .flatMap(json -> jsonTypeMapperProvider
+            .provide(Dog.class)
+            .flatMap(mapper -> mapper.unmarshall(json)))
         .unwrap();
+    Assertions.assertEquals(dog, reparsedDog);
 
     record Household(String nickname, List<Dog> dogs) {}
     Household household = new Household("nickname", List.of(
@@ -186,11 +201,41 @@ class JsonMarshallerTest {
         new Dog("Fasz", new Owner("John", "Budapest")),
         new Dog("Kecske", new Owner("Blaize", "Budapest"))
     ));
-    jsonTypeMapperProvider.provide(Household.class)
+    Household reparsedHousehold = jsonTypeMapperProvider.provide(Household.class)
         .flatMap(mapper -> mapper.marshall(household))
         .map(JsonValue::toString)
+        .flatMap(parser::parse)
+        .flatMap(json -> jsonTypeMapperProvider
+            .provide(Household.class)
+            .flatMap(mapper -> mapper.unmarshall(json)))
         .unwrap();
+    Assertions.assertEquals(household, reparsedHousehold);
+  }
 
+  @Test
+  void parsingObjectMapFromFileAndMarshallingItBack_correctlyTransformsTheData() throws Exception {
+    final JsonValueMapper valueMapper = new JsonValueMapper();
+
+    InputStream testResource01 = JsonMarshallerTest.class.getResourceAsStream("/test01.json");
+    Assertions.assertNotNull(testResource01);
+    try (var reader = new BufferedReader(new InputStreamReader(testResource01))) {
+      String jsonString = reader.lines().collect(joining());
+      Result<Object> result = parser.parse(jsonString).flatMap(valueMapper::unmarshall);
+      assertThat(result)
+          .isNotNull()
+          .matches(Result::isOk);
+      Object objectMap = result.unwrap();
+      assertThat(objectMap).isInstanceOf(Map.class);
+
+      Object reparsedObjectMap = valueMapper
+          .marshall(objectMap)
+          .map(JsonValue::toString)
+          .flatMap(parser::parse)
+          .flatMap(valueMapper::unmarshall)
+          .unwrap();
+      assertThat(reparsedObjectMap).isEqualTo(objectMap);
+
+    }
   }
 
 }
