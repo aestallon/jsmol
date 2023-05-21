@@ -1,6 +1,12 @@
 package hu.aestallon.jsmol.parser;
 
-import hu.aestallon.jsmol.json.*;
+import hu.aestallon.jsmol.json.JsonArray;
+import hu.aestallon.jsmol.json.JsonBoolean;
+import hu.aestallon.jsmol.json.JsonNull;
+import hu.aestallon.jsmol.json.JsonNumber;
+import hu.aestallon.jsmol.json.JsonObject;
+import hu.aestallon.jsmol.json.JsonString;
+import hu.aestallon.jsmol.json.JsonValue;
 import hu.aestallon.jsmol.result.Err;
 import hu.aestallon.jsmol.result.ExErr;
 import hu.aestallon.jsmol.result.Ok;
