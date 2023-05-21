@@ -4,7 +4,6 @@ import hu.aestallon.jsmol.json.JsonNull;
 import hu.aestallon.jsmol.json.JsonObject;
 import hu.aestallon.jsmol.json.JsonValue;
 import hu.aestallon.jsmol.marshaller.*;
-import hu.aestallon.jsmol.result.Err;
 import hu.aestallon.jsmol.result.ExErr;
 import hu.aestallon.jsmol.result.Ok;
 import hu.aestallon.jsmol.result.Result;
@@ -148,11 +147,24 @@ abstract sealed class JsonTypeMapperFactory<T> permits JsonTypeMapperFactory.Rec
               .map(e -> {
                 final String prop = e.getKey();
                 final Class<?> javaType = e.getValue().getType();
-                return Optional.ofNullable(jsonObject.value().get(prop))
-                    .map(jsonVal -> provider
-                        .provide(javaType)
-                        .flatMap(mapper -> mapper.unmarshall(jsonVal)))
-                    .orElse(Ok.of(null));
+                return (Result<?>) ((Objects.equals(List.class, javaType))
+                    ? Optional
+                        .ofNullable(jsonObject.value().get(prop))
+                        .map(jsonVal -> Result.of(() -> e.getValue().getGenericType())
+                            .map(ParameterizedType.class::cast)
+                            .map(paramType -> paramType.getActualTypeArguments()[0])
+                            .map(Type::getTypeName)
+                            .map(Class::forName)
+                            .flatMap(provider::provideList)
+                            .flatMap(mapper -> mapper.unmarshall(jsonVal))
+                            .map(List.class::cast))
+                        .orElse(Ok.of(null))
+                    : Optional
+                        .ofNullable(jsonObject.value().get(prop))
+                        .map(jsonVal -> provider
+                            .provide(javaType)
+                            .flatMap(mapper -> mapper.unmarshall(jsonVal)))
+                        .orElse(Ok.of(null)));
               })
               .collect(Result.toList())
               .map(args -> args.toArray(Object[]::new))

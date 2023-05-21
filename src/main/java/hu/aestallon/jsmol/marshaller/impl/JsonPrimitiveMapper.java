@@ -13,36 +13,51 @@ public final class JsonPrimitiveMapper<T, W extends WrappedValue<? super T>>
     implements JsonTypeMapper<T> {
 
   static final JsonPrimitiveMapper<String, JsonString> STRING_MAPPER =
-      new JsonPrimitiveMapper<>(JsonString::new, WrappedValue::value, JsonString.class);
+      new JsonPrimitiveMapper<>(
+          JsonString::new,
+          WrappedValue::value,
+          String.class, JsonString.class);
 
   static final JsonPrimitiveMapper<Integer, JsonNumber> INT_MAPPER =
       new JsonPrimitiveMapper<>(
-          JsonNumber::new, n -> n.value().intValue(), JsonNumber.class);
+          JsonNumber::new,
+          n -> n.value().intValue(),
+          Integer.class, JsonNumber.class);
 
   static final JsonPrimitiveMapper<Long, JsonNumber> LONG_MAPPER =
       new JsonPrimitiveMapper<>(
-          JsonNumber::new, n -> n.value().longValue(), JsonNumber.class);
+          JsonNumber::new,
+          n -> n.value().longValue(),
+          Long.class, JsonNumber.class);
 
   static final JsonPrimitiveMapper<Float, JsonNumber> FLOAT_MAPPER =
       new JsonPrimitiveMapper<>(
-          JsonNumber::new, n -> n.value().floatValue(), JsonNumber.class);
+          JsonNumber::new,
+          n -> n.value().floatValue(),
+          Float.class, JsonNumber.class);
 
   static final JsonPrimitiveMapper<Double, JsonNumber> DOUBLE_MAPPER =
       new JsonPrimitiveMapper<>(
-          JsonNumber::new, n -> n.value().doubleValue(), JsonNumber.class);
+          JsonNumber::new,
+          n -> n.value().doubleValue(),
+          Double.class, JsonNumber.class);
 
   static final JsonPrimitiveMapper<Boolean, JsonBoolean> BOOLEAN_MAPPER =
       new JsonPrimitiveMapper<>(
-          JsonBoolean::new, WrappedValue::value, JsonBoolean.class);
+          JsonBoolean::new,
+          WrappedValue::value,
+          Boolean.class, JsonBoolean.class);
 
   private final Function<T, W> constructor;
   private final Function<W, T> extractor;
+  private final Class<T>       type;
   private final Class<W>       wrapperClass;
 
   public JsonPrimitiveMapper(Function<T, W> constructor, Function<W, T> extractor,
-                             Class<W> wrapperClass) {
+                             Class<T> type, Class<W> wrapperClass) {
     this.constructor = constructor;
     this.extractor = extractor;
+    this.type = type;
     this.wrapperClass = wrapperClass;
   }
 
@@ -61,6 +76,6 @@ public final class JsonPrimitiveMapper<T, W extends WrappedValue<? super T>>
     if (wrapperClass.isInstance(json)) {
       return new Ok<>(extractor.apply(wrapperClass.cast(json)));
     }
-    return new ExErr<>(new TypeConversionException(json.getClass(), Integer.class));
+    return new ExErr<>(new TypeConversionException(json.getClass(), type));
   }
 }

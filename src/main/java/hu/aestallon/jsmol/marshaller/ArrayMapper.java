@@ -21,7 +21,7 @@ public class ArrayMapper<E> implements JsonTypeMapper<List<E>> {
   @Override
   public Result<JsonValue> marshall(List<E> es) {
     if (es == null) {
-      return new Ok<>(JsonNull.INSTANCE);
+      return Ok.of(JsonNull.INSTANCE);
     }
     if (es.isEmpty()) {
       return new Ok<>(new JsonArray(Collections.emptyList()));
