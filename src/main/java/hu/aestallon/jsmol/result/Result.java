@@ -25,7 +25,7 @@ public interface Result<T> {
 
   static <T> Result<T> of(CheckedSupplier<T> s) {
     try {
-      return new Ok<>(s.get());
+      return Ok.of(s.get());
     } catch (Exception t) {
       return new ExErr<>(t);
     }
@@ -35,7 +35,7 @@ public interface Result<T> {
   private static <E> Result<List<E>> invertList(List<Result<E>> c) {
     return (c.stream().anyMatch(Result::isErr))
         ? (Result<List<E>>) c.stream().filter(Result::isErr).findFirst().orElseThrow()
-        : new Ok<>(c.stream().map(Result::unwrap).toList());
+        : Ok.of(c.stream().map(Result::unwrap).toList());
   }
 
   static <E> Collector<Result<E>, ?, Result<List<E>>> toList() {

@@ -12,5 +12,12 @@ public class TypeConversionException extends IllegalArgumentException {
     this.from = from;
     this.to = to;
   }
-  
+
+  public Class<?> from() {
+    return from;
+  }
+
+  public Class<?> to() {
+    return to;
+  }
 }

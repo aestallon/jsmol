@@ -14,7 +14,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.stream.Collectors.toMap;
+import static hu.aestallon.jsmol.parser.JsonParser.RawStringProcessor.DISCARD;
 
 public final class JsonParser {
 
@@ -23,8 +23,13 @@ public final class JsonParser {
     Result<ParseCursor> parse(ParseCursor cursor);
   }
 
+  @FunctionalInterface
+  interface RawStringProcessor extends Function<String, JsonValue> {
+    RawStringProcessor DISCARD = s -> null;
+  }
+
   record ParseCursor(String str, int idx, JsonValue res) {
-    Result<ParseCursor> parseLiteral(String lit, JsonValue res) {
+    Result<ParseCursor> advanceOnLiteral(String lit, JsonValue res) {
       for (int i = 0; i < lit.length(); i++) {
         if (lit.charAt(i) != str.charAt(i + idx)) {
           return new Err<>(this);
@@ -33,8 +38,7 @@ public final class JsonParser {
       return new Ok<>(new ParseCursor(str, idx + lit.length(), res));
     }
 
-    Result<ParseCursor> parseWithPattern(Pattern ptn,
-                                         Function<String, JsonValue> resultProcessor) {
+    Result<ParseCursor> advanceOnPattern(Pattern ptn, RawStringProcessor resultProcessor) {
       final Matcher m = ptn.matcher(str);
       return (m.find(idx) && m.start() == idx)
           ? new Ok<>(new ParseCursor(
@@ -69,28 +73,28 @@ public final class JsonParser {
 
   // -----------------------------------------------------------------------------------------------
   // Type specific parser implementations
-  private final Parser NULL_PARSER   = c -> c.parseLiteral(NULL_LITERAL, new JsonNull());
+  private final Parser NULL_PARSER   = c -> c.advanceOnLiteral(NULL_LITERAL, new JsonNull());
   private final Parser BOOL_PARSER   = c -> c
-      .parseLiteral(TRUE_LITERAL, new JsonBoolean(true))
-      .or(() -> c.parseLiteral(FALSE_LITERAL, new JsonBoolean(false)));
-  private final Parser NUMBER_PARSER = c -> c.parseWithPattern(
+      .advanceOnLiteral(TRUE_LITERAL, new JsonBoolean(true))
+      .or(() -> c.advanceOnLiteral(FALSE_LITERAL, new JsonBoolean(false)));
+  private final Parser NUMBER_PARSER = c -> c.advanceOnPattern(
       NUM_PTRN,
       s -> s.contains(".")
           ? new JsonNumber(Double.parseDouble(s))
           : new JsonNumber(Long.parseLong(s)));
-  private final Parser STRING_PARSER = c -> c.parseWithPattern(
+  private final Parser STRING_PARSER = c -> c.advanceOnPattern(
       STR_PTRN,
       s -> s.length() == 2
           ? new JsonString("")
           : new JsonString(s.substring(1, s.length() - 1)));
   private final Parser ARRAY_PARSER  = c -> c
-      .parseWithPattern(ARRAY_START_PTRN, DISCARD)
+      .advanceOnPattern(ARRAY_START_PTRN, DISCARD)
       .flatMap(cursor -> {
         final List<JsonValue> list = new ArrayList<>();
         Result<ParseCursor> result;
-        while ((result = cursor.parseWithPattern(ARRAY_END_PTRN, DISCARD)).isErr()) {
+        while ((result = cursor.advanceOnPattern(ARRAY_END_PTRN, DISCARD)).isErr()) {
           if (!list.isEmpty()) {
-            result = cursor.parseWithPattern(ELEMENT_SEP_PTRN, DISCARD);
+            result = cursor.advanceOnPattern(ELEMENT_SEP_PTRN, DISCARD);
             if (result.isErr()) {return result;} else {cursor = result.unwrap();}
           }
           result = this.parseInternal(cursor);
@@ -104,13 +108,13 @@ public final class JsonParser {
         return Ok.of(new ParseCursor(cursor.str, cursor.idx, jsonArray));
       });
   private final Parser OBJECT_PARSER = c -> c
-      .parseWithPattern(OBJ_START_PTRN, DISCARD)
+      .advanceOnPattern(OBJ_START_PTRN, DISCARD)
       .flatMap(cursor -> {
         final Map<String, JsonValue> map = new LinkedHashMap<>();
         Result<ParseCursor> result;
-        while ((result = cursor.parseWithPattern(OBJ_END_PTRN, DISCARD)).isErr()) {
+        while ((result = cursor.advanceOnPattern(OBJ_END_PTRN, DISCARD)).isErr()) {
           if (!map.isEmpty()) {
-            result = cursor.parseWithPattern(ELEMENT_SEP_PTRN, DISCARD);
+            result = cursor.advanceOnPattern(ELEMENT_SEP_PTRN, DISCARD);
             if (result.isErr()) {return result;} else {cursor = result.unwrap();}
           }
           result = STRING_PARSER.parse(cursor);
@@ -122,7 +126,7 @@ public final class JsonParser {
                 new IllegalStateException("duplicate key: " + key + " at idx: " + cursor.idx));
           }
 
-          result = cursor.parseWithPattern(ENTRY_SEP_PTRN, DISCARD);
+          result = cursor.advanceOnPattern(ENTRY_SEP_PTRN, DISCARD);
           if (result.isErr()) {return result;} else {cursor = result.unwrap();}
 
           result = this.parseInternal(cursor);
@@ -136,15 +140,12 @@ public final class JsonParser {
         return Ok.of(new ParseCursor(cursor.str, cursor.idx, jsonObject));
       });
 
-  private static final Function<String, JsonValue> DISCARD = s -> null;
-
-
   public Result<JsonValue> parse(String s) {
     return parseInternal(s).map(ParseCursor::res);
   }
 
-  private Result<ParseCursor> parseInternal(String str) {
-    return this.parseInternal(new ParseCursor(str, 0, null));
+  private Result<ParseCursor> parseInternal(String s) {
+    return this.parseInternal(new ParseCursor(s, 0, null));
   }
 
   private Result<ParseCursor> parseInternal(ParseCursor c) {

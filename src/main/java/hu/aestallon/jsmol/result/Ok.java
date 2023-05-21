@@ -25,7 +25,7 @@ public final class Ok<T> implements Result<T> {
   @Override
   public <U> Result<U> map(CheckedFunction<T, U> f) {
     try {
-      return new Ok<>(f.apply(t));
+      return Ok.of(f.apply(t));
     } catch (Exception e) {
       return new ExErr<>(e);
     }
