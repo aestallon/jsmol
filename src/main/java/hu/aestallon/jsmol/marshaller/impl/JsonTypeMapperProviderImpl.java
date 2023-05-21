@@ -11,25 +11,21 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class JsonTypeMapperProviderImpl implements JsonTypeMapperProvider {
 
-  private final Map<Class<?>, JsonTypeMapper<?>> typeMappersByClass = new ConcurrentHashMap<>();
+  private final Map<Class<?>, JsonTypeMapper<?>> typeMappersByClass  = new ConcurrentHashMap<>();
   private final Map<Class<?>, ArrayMapper<?>>    arrayMappersByClass = new ConcurrentHashMap<>();
 
   public JsonTypeMapperProviderImpl() {
-    typeMappersByClass.putAll(Map.of(
-        String.class, JsonPrimitiveMapper.STRING_MAPPER,
-        Integer.class, JsonPrimitiveMapper.INT_MAPPER,
-        Long.class, JsonPrimitiveMapper.LONG_MAPPER,
-        Float.class, JsonPrimitiveMapper.FLOAT_MAPPER,
-        Double.class, JsonPrimitiveMapper.DOUBLE_MAPPER,
-        Boolean.class, JsonPrimitiveMapper.BOOLEAN_MAPPER
-    ));
-    typeMappersByClass.putAll(Map.of(
-        int.class, JsonPrimitiveMapper.INT_MAPPER,
-        long.class, JsonPrimitiveMapper.LONG_MAPPER,
-        float.class, JsonPrimitiveMapper.FLOAT_MAPPER,
-        double.class, JsonPrimitiveMapper.DOUBLE_MAPPER,
-        boolean.class, JsonPrimitiveMapper.BOOLEAN_MAPPER
-    ));
+    this.register(String.class, JsonPrimitiveMapper.STRING_MAPPER);
+    this.register(Integer.class, JsonPrimitiveMapper.INT_MAPPER);
+    this.register(Long.class, JsonPrimitiveMapper.LONG_MAPPER);
+    this.register(Float.class, JsonPrimitiveMapper.FLOAT_MAPPER);
+    this.register(Double.class, JsonPrimitiveMapper.DOUBLE_MAPPER);
+    this.register(Boolean.class, JsonPrimitiveMapper.BOOLEAN_MAPPER);
+    this.register(int.class, JsonPrimitiveMapper.INT_MAPPER);
+    this.register(long.class, JsonPrimitiveMapper.LONG_MAPPER);
+    this.register(float.class, JsonPrimitiveMapper.FLOAT_MAPPER);
+    this.register(double.class, JsonPrimitiveMapper.DOUBLE_MAPPER);
+    this.register(boolean.class, JsonPrimitiveMapper.BOOLEAN_MAPPER);
   }
 
   @Override
