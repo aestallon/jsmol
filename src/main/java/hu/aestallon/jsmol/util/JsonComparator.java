@@ -34,7 +34,7 @@ import java.util.Objects;
  */
 public class JsonComparator {
 
-  public JsonValue compare(JsonValue left, JsonValue right) {
+  public static JsonValue compare(JsonValue left, JsonValue right) {
     if (right == null || Objects.equals(left, right)) {
       // right just isn't there (because it has been deleted, or the value was never present), or
       // the value is unchanged => we can exclude it from our result:
@@ -54,7 +54,7 @@ public class JsonComparator {
           if (right instanceof JsonArray arrRight) {
             List<JsonValue> resultValues = arrRight.iter()
                 .filter(json -> !arrLeft.contains(json))
-                .map(json -> this.compare(null, json))
+                .map(json -> compare(null, json))
                 .filter(Objects::nonNull)
                 .toList();
             yield new JsonArray(resultValues);
@@ -65,7 +65,7 @@ public class JsonComparator {
         case JsonObject objLeft -> {
           if (right instanceof JsonObject objRight) {
             Map<String, JsonValue> resultValues = objRight.iter()
-                .map(pair -> Pair.of(pair.a(), this.compare(objLeft.get(pair.a()), pair.b())))
+                .map(Pair.onB((a, b) -> compare(objLeft.get(a), b)))
                 .filter(pair -> pair.b() != null)
                 .collect(Pair.toMap());
             yield new JsonObject(resultValues);

@@ -16,6 +16,7 @@
 package hu.aestallon.jsmol.util;
 
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -32,6 +33,10 @@ public record Pair<A, B>(A a, B b) {
 
   public static <A, B, R> Function<Pair<A, B>, Pair<A, R>> onB(Function<B, R> f) {
     return pair -> Pair.of(pair.a, f.apply(pair.b));
+  }
+
+  public static <A, B, R> Function<Pair<A, B>, Pair<A, R>> onB(BiFunction<A, B, R> f) {
+    return pair -> Pair.of(pair.a, f.apply(pair.a, pair.b));
   }
 
   public static <A, B, R> Function<Pair<A, B>, Pair<R, B>> onA(Function<A, R> f) {
