@@ -34,9 +34,12 @@ public record Pair<A, B>(A a, B b) {
     return pair -> Pair.of(pair.a, f.apply(pair.b));
   }
 
+  public static <A, B, R> Function<Pair<A, B>, Pair<R, B>> onA(Function<A, R> f) {
+    return pair -> Pair.of(f.apply(pair.a), pair.b);
+  }
+
   public static <A, B> Collector<Pair<A, B>, ?, Map<A, B>> toMap() {
     return Collectors.toMap(Pair::a, Pair::b);
   }
-
 
 }

@@ -15,36 +15,25 @@
  */
 package hu.aestallon.jsmol.json;
 
+import java.util.stream.Stream;
+
 /**
- * Represents the {@code null} value in JavaScript Object Notation (JSON).
+ * Represents a complex JSON value (an object or an array).
  *
  * <p>
- * All instances of this class are considered equal; the {@link #equals(Object)} and
- * {@link #hashCode()} methods obey this notion.
+ * Complex values contain elements, and thus they are streamable.
  *
- * <p>
- * Consider using the singleton {@link #INSTANCE} to avoid unnecessary object creation.
+ * @param <T> the type representing the sub-elements of the complex JSON object; stands for
+ *            JsonValue for arrays and Pair&lt;String, JsonValue&gt; for objects
  *
  * @author Szabolcs Bazil Papp
  */
-public final class JsonNull implements JsonValue {
+public sealed interface JsonComplex<T> permits JsonArray, JsonObject {
 
-  public static final JsonNull INSTANCE = new JsonNull();
-
-  @Override
-  public String toString() {
-    return "null";
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {return true;}
-    return o != null && getClass() == o.getClass();
-  }
-
-  @Override
-  public int hashCode() {
-    return 0;
-  }
+  /**
+   * Returns a sequential {@link Stream} with this complex {@code JSON} value as its source.
+   * @return a sequential {@code Stream} over the elements in this complex {@code JSON} value
+   */
+  Stream<T> iter();
 
 }

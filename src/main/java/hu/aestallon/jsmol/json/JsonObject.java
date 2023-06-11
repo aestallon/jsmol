@@ -15,10 +15,21 @@
  */
 package hu.aestallon.jsmol.json;
 
-import java.util.Map;
-import java.util.stream.Collectors;
+import hu.aestallon.jsmol.util.Pair;
 
-public final class JsonObject extends WrappedValue<Map<String, JsonValue>> {
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public final class JsonObject
+    extends WrappedValue<Map<String, JsonValue>>
+    implements Map<String, JsonValue>, JsonComplex<Pair<String, JsonValue>> {
+
+  public static final JsonObject EMPTY = new JsonObject(Collections.emptyMap());
+
   public JsonObject(Map<String, JsonValue> m) {super(m);}
 
   @Override
@@ -30,5 +41,70 @@ public final class JsonObject extends WrappedValue<Map<String, JsonValue>> {
             .append("\":")
             .append(e.getValue()))
         .collect(Collectors.joining(",", "{", "}"));
+  }
+
+  @Override
+  public Stream<Pair<String, JsonValue>> iter() {
+    return super.value().entrySet().stream().map(Pair::ofEntries);
+  }
+
+  @Override
+  public int size() {
+    return super.value().size();
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return super.value().isEmpty();
+  }
+
+  @Override
+  public boolean containsKey(Object key) {
+    return super.value().containsKey(key);
+  }
+
+  @Override
+  public boolean containsValue(Object value) {
+    return super.value().containsValue(value);
+  }
+
+  @Override
+  public JsonValue get(Object key) {
+    return super.value().get(key);
+  }
+
+  @Override
+  public JsonValue put(String key, JsonValue value) {
+    return super.value().put(key, value);
+  }
+
+  @Override
+  public JsonValue remove(Object key) {
+    return super.value().remove(key);
+  }
+
+  @Override
+  public void putAll(Map<? extends String, ? extends JsonValue> m) {
+    super.value().putAll(m);
+  }
+
+  @Override
+  public void clear() {
+    super.value().clear();
+  }
+
+  @Override
+  public Set<String> keySet() {
+    return super.value().keySet();
+  }
+
+  @Override
+  public Collection<JsonValue> values() {
+    return super.value().values();
+  }
+
+  @Override
+  public Set<Entry<String, JsonValue>> entrySet() {
+    return super.value().entrySet();
   }
 }

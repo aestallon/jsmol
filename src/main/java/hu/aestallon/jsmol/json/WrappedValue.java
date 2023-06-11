@@ -28,4 +28,17 @@ public sealed class WrappedValue<T>
   }
 
   public T value() {return value;}
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {return true;}
+    if (o == null || getClass() != o.getClass()) {return false;}
+    WrappedValue<?> that = (WrappedValue<?>) o;
+    return Objects.equals(this.value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return this.value.hashCode();
+  }
 }
